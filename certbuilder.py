@@ -1,5 +1,5 @@
 from cryptography import x509
-from cryptography.x509.oid import NameOID
+from cryptography.x509.oid import NameOID, ExtensionOID
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import rsa, ec
 from cryptography.hazmat.backends import default_backend
@@ -32,10 +32,10 @@ def createCSR(private_key, user_csr_input):
         x509.NameAttribute(NameOID.COMMON_NAME, user_csr_input['common_name']),
     ])
 
-    san_dns_list = [x509.DNSName(fqdn) for fqdn in user_csr_input['san_dns']]
+    #san_dns_list = [x509.DNSName(fqdn) for fqdn in user_csr_input['san_dns']]
 
     csr = x509.CertificateSigningRequestBuilder().subject_name(subject).add_extension(
-        x509.SubjectAlternativeName(san_dns_list),
+        x509.SubjectAlternativeName([x509.DNSName(fqdn) for fqdn in user_csr_input['san_dns']]),
         critical=False,
     ).sign(private_key, hashes.SHA256(), default_backend())
 
@@ -151,6 +151,9 @@ def createCA(user_csr_input):
 
 def signCSR(csr, ca_cert, ca_key):
     
+    #san_extension = csr.extensions.get_extension_for_oid(ExtensionOID.SUBJECT_ALTERNATIVE_NAME)
+    #print(f'{san_extension=}')
+
     signed_cert = x509.CertificateBuilder().subject_name(
         csr.subject
     ).issuer_name(
@@ -164,7 +167,13 @@ def signCSR(csr, ca_cert, ca_key):
     ).not_valid_after(
         # Certificate will be valid for 2 years
         datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=365*2)
-    # Sign certificate with CA private key
+    ).add_extension(
+        x509.BasicConstraints(ca=False, path_length=None), critical=True,
+    # add SAN from CSR to signed cert
+    ).add_extension(
+        x509.SubjectAlternativeName(csr.extensions.get_extension_for_oid(ExtensionOID.SUBJECT_ALTERNATIVE_NAME).value),
+        critical=False,
+    # Sign certificate with CA private keys
     ).sign(ca_key, hashes.SHA256())
 
     return signed_cert
