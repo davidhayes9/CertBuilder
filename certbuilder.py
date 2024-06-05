@@ -83,7 +83,7 @@ def writeKey(private_key, cn):
         ))
 
      # Let the user know where we are writing the file
-    key_location = os.getcwd() + key_name
+    key_location = os.getcwd() + '/' + key_name
     print(f'KEY saved to {key_location}')
 
 
@@ -95,7 +95,7 @@ def writeCert(cert, cn, cert_type):
         f.write(cert.public_bytes(serialization.Encoding.PEM))
 
     # Let the user know where we are printing the file
-    cert_location = os.getcwd() + csr_name
+    cert_location = os.getcwd() + '/' + csr_name
     print(f'{cert_type.upper()} saved to {cert_location}')
 
 
@@ -149,7 +149,6 @@ def createCA(user_csr_input):
     return ca_cert, ca_key
 
 
-
 def signCSR(csr, ca_cert, ca_key):
     
     signed_cert = x509.CertificateBuilder().subject_name(
@@ -161,7 +160,7 @@ def signCSR(csr, ca_cert, ca_key):
     ).serial_number(
         x509.random_serial_number()
     ).not_valid_before(
-        datetime.utcnow()
+        datetime.datetime.now(datetime.timezone.utc)
     ).not_valid_after(
         # Certificate will be valid for 2 years
         datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=365*2)
@@ -182,9 +181,15 @@ def main():
     writeKey(private_key, user_csr_input['common_name'])
     writeCert(csr, user_csr_input['common_name'], 'csr')
 
-    ca_cert, ca_key = createCA(user_csr_input)
+    print()
+    answer = input("Would you like to create a CA and sign the CSR with it? [y/n] ")
+    if answer == 'y':
 
-    signed_cert = signCSR(csr, ca_cert, ca_key)
+        ca_cert, ca_key = createCA(user_csr_input)
+        writeKey(ca_key, 'CA')
+        writeCert(ca_cert, 'CA', 'crt')
+        signed_cert = signCSR(csr, ca_cert, ca_key)
+        writeCert(signed_cert, user_csr_input['common_name'], 'crt')
 
 
 if __name__ == "__main__":
