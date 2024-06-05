@@ -10,7 +10,6 @@ import datetime
 def createKey(algo):
 
     # Generate a key pair
-
     if algo == 'rsa':    
         rsa_key = rsa.generate_private_key(
             public_exponent=65537,
@@ -71,12 +70,11 @@ def collectUserInputs():
     return user_csr_input
 
 
-def write_files(private_key, csr, cn):
+def writeKey(private_key, cn):
 
     key_name = cn + '.key'
-    csr_name = cn + '.csr'
 
-        # Save the key to a file
+    # Save the key to a file
     with open(key_name, "wb") as f:
         f.write(private_key.private_bytes(
         encoding=serialization.Encoding.PEM,
@@ -84,16 +82,21 @@ def write_files(private_key, csr, cn):
         encryption_algorithm=serialization.NoEncryption(),
         ))
 
-    with open(csr_name, "wb") as f:
-        f.write(csr.public_bytes(serialization.Encoding.PEM))
-
      # Let the user know where we are writing the file
     key_location = os.getcwd() + key_name
     print(f'KEY saved to {key_location}')
 
+
+def writeCert(cert, cn, cert_type):
+
+    csr_name = cn + '.' + cert_type
+
+    with open(csr_name, "wb") as f:
+        f.write(cert.public_bytes(serialization.Encoding.PEM))
+
     # Let the user know where we are printing the file
-    csr_location = os.getcwd() + csr_name
-    print(f'CSR saved to {csr_location}')
+    cert_location = os.getcwd() + csr_name
+    print(f'{cert_type.upper()} saved to {cert_location}')
 
 
 def createCA(user_csr_input):
@@ -176,14 +179,12 @@ def main():
 
     csr = createCSR(private_key, user_csr_input)    
 
-    write_files(private_key, csr, user_csr_input['common_name'])
+    writeKey(private_key, user_csr_input['common_name'])
+    writeCert(csr, user_csr_input['common_name'], 'csr')
 
     ca_cert, ca_key = createCA(user_csr_input)
 
     signed_cert = signCSR(csr, ca_cert, ca_key)
-
-    write_files()
-
 
 
 if __name__ == "__main__":
