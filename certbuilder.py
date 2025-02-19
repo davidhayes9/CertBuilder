@@ -28,15 +28,15 @@ def createCSR(private_key, user_csr_input):
 
     subject = x509.Name([
         x509.NameAttribute(NameOID.COUNTRY_NAME,
-                           user_csr_input['country_code']),
+                        user_csr_input['country_code']),
         x509.NameAttribute(NameOID.STATE_OR_PROVINCE_NAME,
-                           user_csr_input['state']),
+                        user_csr_input['state']),
         x509.NameAttribute(NameOID.LOCALITY_NAME,
-                           user_csr_input['location']),
+                        user_csr_input['location']),
         x509.NameAttribute(NameOID.ORGANIZATION_NAME,
-                           user_csr_input['org_name']),
+                        user_csr_input['org_name']),
         x509.NameAttribute(NameOID.COMMON_NAME,
-                           user_csr_input['common_name']),
+                        user_csr_input['common_name']),
     ])
 
     san_dns_list = [x509.DNSName(fqdn) for fqdn in user_csr_input['san_dns']]
@@ -58,15 +58,18 @@ def collectUserInputs():
 
     common_name = input("Common Name for use in subject: ").strip()
     org_name = input("Organization Name for use in subject: ").strip()
+    org_unit_name = (
+    input("Organization Unit Name for use in subject: ").strip()
+    )
     location = input("Locality Name for use in subject: ").strip()
     state = input("State for use in subject: ").strip()
     country_code = (
         input("Two-Letter Country Code for use in subject: ")
         .strip()
     )
-    # org_unit_name = (
-    #     input("Organization Unit Name for use in subject: ").strip()
-    # )
+    org_unit_name = (
+        input("Organization Unit Name for use in subject: ").strip()
+    )
     email_add = input("Email address for use in subject: ").strip()
     san_ip = (
         input(
@@ -91,7 +94,7 @@ def collectUserInputs():
         'state': state,
         'location': location,
         'org_name': org_name,
-        # 'org_unit_name': org_unit_name,
+        'org_unit_name': org_unit_name,
         'email_add': email_add,
         'san_ip': san_ip,
         'san_dns': san_dns
@@ -136,13 +139,13 @@ def createCA(user_csr_input):
     # subject == issuer for CA
     subject = issuer = x509.Name([
         x509.NameAttribute(NameOID.COUNTRY_NAME,
-                           user_csr_input['country_code']),
+                        user_csr_input['country_code']),
         x509.NameAttribute(NameOID.STATE_OR_PROVINCE_NAME,
-                           user_csr_input['state']),
+                        user_csr_input['state']),
         x509.NameAttribute(NameOID.LOCALITY_NAME,
-                           user_csr_input['location']),
+                        user_csr_input['location']),
         x509.NameAttribute(NameOID.ORGANIZATION_NAME,
-                           user_csr_input['org_name']),
+                        user_csr_input['org_name']),
         x509.NameAttribute(NameOID.COMMON_NAME, 'My Real Root CA'),
     ])
 
@@ -228,14 +231,12 @@ def main():
 
     writeKey(private_key, user_csr_input['common_name'])
     writeCert(csr, user_csr_input['common_name'], 'csr')
-
     print()
 
     answer = input("Would you like to create a CA "
-                   "and sign the CSR with it? [y/n] ")
+                    "and sign the CSR with it? [y/n] ")
 
     if answer == 'y':
-
         ca_cert, ca_key = createCA(user_csr_input)
         writeKey(ca_key, 'CA')
         writeCert(ca_cert, 'CA', 'crt')
